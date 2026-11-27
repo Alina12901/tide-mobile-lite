@@ -145,7 +145,17 @@ window.starTideMobile={ctx,appearance,toggleNight,reading,reopenHint,
 };
 function adapt(){mountLaunchControls();if(!mobile.matches)hide();else if(!original())show();appearance()}
 mobile.addEventListener('change',adapt);
-ctx().eventSource.on(ctx().eventTypes.APP_READY,()=>{adapt();syncPortrait()});
+ctx().eventSource.on(ctx().eventTypes.APP_READY,async () => {
+    adapt();
+    syncPortrait();
+    if (document.getElementById('susage_container')) return;
+    try {
+        const { mountUsageTracker } = await import('./usage-tracker.js');
+        mountUsageTracker();
+    } catch (error) {
+        console.error('[潮汐来信] 用量记账初始化失败', error);
+    }
+});
 for(const event of ['CHAT_CHANGED','GROUP_UPDATED','MESSAGE_RECEIVED']){
     const type=ctx().eventTypes[event];
     if(type)ctx().eventSource.on(type,()=>{if(event!=='MESSAGE_RECEIVED'||ctx().groupId)syncPortrait();if(event==='CHAT_CHANGED' && root.hasAttribute('data-tide-reading'))frame.contentWindow?.refreshChatTitle?.()});

@@ -1,8 +1,8 @@
 {
   "author": "星垂",
   "source": "https://github.com/Alina12901/tide-mobile-lite",
-  "version": "1.3.10",
-  "code": "XC-TIDE-1.3.10-B223EDE72571",
+  "version": "1.3.11",
+  "code": "XC-TIDE-1.3.11-011623712139",
   "sha256": {
     "atlas-store.js": "934b6ff38144f5479f8bf2a752395eca297bc8ebadc7df052d12e5a920fff7eb",
     "atlas.css": "6f01ceae18886db5c037ec4deb3401614a7a9bd5fb2d4b0c0c0076d10a35d52a",
@@ -11,13 +11,15 @@
     "covers.js": "3d92b4586048957c7a163d5156a98bbbdfb9048dc59e4722c6e5ab8e43a7cdde",
     "flip.js": "79ee2134ae7d496d42341d7387d74fbf8d94043adecdf701736414081ace0965",
     "host.css": "fa33eb37d56dc5463097b2b19a2544084fefdd0a8cb5eb6e36cb1bfea6a9f0bb",
-    "index.js": "b254f279ad10ef5808aea6c9f1046dfb674cdfce91c9b39f9365eeac048b86af",
-    "ledger.js": "bf66802a856f37f20d4e1c366d48c88e21144b1384988e93804187d1409c5d7f",
+    "index.js": "058846324dff7b276bb2e4f7559ebabde1f0c29a115054971f41ca9a49bb075e",
+    "ledger.js": "6d1ae0a2d0a627531ccfb4ac707de9a3baff5c66f8ac04df11602a40b2877817",
     "letter.webp": "b3da6806e8e5d70ad5904cad3ba43cf5048a87aa2e7f0f9515fc783713dd4254",
     "live.js": "e1dd3799434dc7f88ce85c0be4f4046ff11ea34b479a82f67f6d53cc3994088f",
-    "manifest.json": "f37468b9c08f7f84a67a35bc6498b6b774759226e81c659b6fc4a5f11f843074",
+    "manifest.json": "45c73fbc7dbf34156360d475a735670bd1579388553eb9b3b766b7d1ede85428",
     "profile.js": "910a5d94c0f0b4d36e70adca4cf193cecb9b5a00a00d1995cc9f95e9eccb1a79",
     "shell.html": "ec3afbf1736b236dc111cb1954d101c6f87cb5269202203f3633fb28d5be76ac",
-    "tool-page.js": "0e6c0a9f06b499c43aa757fa64d1c5e2e716ce648159e23657a10538913efead"
+    "tool-page.js": "0e6c0a9f06b499c43aa757fa64d1c5e2e716ce648159e23657a10538913efead",
+    "usage-tracker.css": "eeaa18d750cf8a4e5cbb4c767b697ce17e41aea9ea4e9319c48aeb202d61b5da",
+    "usage-tracker.js": "35cf5ef7258a43ef0321bf9af91fb02aefe10f13d1701d6cd8cb9623087815de"
   }
 }

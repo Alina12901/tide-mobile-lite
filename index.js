@@ -54,6 +54,7 @@ launcher.onclick=show;
 const drawerIds={'世界书':'WI-SP-button','API 连接':'sys-settings-button','预设与提示词':'ai-config-button','高级格式':'advanced-formatting-button','用户人设':'persona-management-button','群聊':'rightNavHolder','原版角色管理':'rightNavHolder','扩展与正则':'extensions-settings-button','酒馆背景':'backgrounds-button','偏好与快捷指令':'user-settings-button','数据与备份':'user-settings-button'};
 let opening=false;
 window.starTideMobile={ctx,appearance,toggleNight,hide,
+    atlasStore:()=>import('./atlas-store.js'),
     ready(){if(mobile.matches&&!original()){frame.hidden=false;appearance();frame.contentWindow.showTideHome()}},
     restore(){pref().setItem('tide-mobile-original','1');hide()},
     drawer(label){const icon=document.querySelector(`#${drawerIds[label]} > .drawer-toggle .drawer-icon`);if(!icon)throw Error('这个入口暂时不可用');hide();if(!icon.classList.contains('openIcon'))icon.click()},

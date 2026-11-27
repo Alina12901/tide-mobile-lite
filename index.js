@@ -3,6 +3,17 @@ const mobile = matchMedia('(max-width:800px)');
 const root = document.documentElement;
 const pref = () => ctx().accountStorage;
 const original = () => pref().getItem('tide-mobile-original') === '1';
+// Dress the existing startup loader. Its lifetime stays with SillyTavern, including
+// early dismissal for onboarding and errors that need the user's attention.
+const startupLoader = mobile.matches && !original() && document.querySelector('#loader.splash-screen');
+if (startupLoader) {
+    startupLoader.classList.add('tide-letter');
+    const caption = document.createElement('div');
+    caption.className = 'tide-letter-caption';
+    caption.setAttribute('role', 'status');
+    caption.textContent = '载入中…';
+    startupLoader.append(caption);
+}
 const frame = document.createElement('iframe');
 frame.id = 'tide-mobile-shell';
 frame.title = '潮汐来信';

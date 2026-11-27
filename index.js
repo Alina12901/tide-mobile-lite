@@ -75,16 +75,21 @@ launcher.onclick = openFromMenu;
 function mountLaunchControls() {
     const settings = document.getElementById('extensions_settings');
     if (settings && !document.getElementById('tide-launch-settings')) {
-        const section = document.createElement('details');
+        const section = document.createElement('div');
         section.id = 'tide-launch-settings';
-        section.innerHTML = `<summary class="inline-drawer-header"><b>潮汐来信</b></summary>
-            <button type="button" class="menu_button">打开潮汐来信</button>
-            <label class="checkbox_label"><input type="checkbox">在原版酒馆显示悬浮按钮</label>
-            <p></p>
-            <small data-tide-source>星垂 · <a href="https://github.com/Alina12901/tide-mobile-lite" target="_blank" rel="noopener noreferrer">官方仓库</a></small>`;
-        section.addEventListener('toggle', async function showSource() {
-            if (!section.open) return;
-            section.removeEventListener('toggle', showSource);
+        section.innerHTML = `<div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <strong>潮汐来信</strong>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <button type="button" class="menu_button">打开潮汐来信</button>
+                <label class="checkbox_label"><input type="checkbox">在原版酒馆显示悬浮按钮</label>
+                <p></p>
+                <small data-tide-source>星垂 · <a href="https://github.com/Alina12901/tide-mobile-lite" target="_blank" rel="noopener noreferrer">官方仓库</a></small>
+            </div>
+        </div>`;
+        section.querySelector('.inline-drawer-toggle').addEventListener('click', async () => {
             // Read only the local release label when this drawer is first opened.
             try {
                 const response = await fetch(new URL('./provenance.json', import.meta.url));
@@ -92,7 +97,7 @@ function mountLaunchControls() {
                 const release = await response.json();
                 section.querySelector('[data-tide-source]').append(` · 溯源码 ${release.code}`);
             } catch { /* The source link also works without the local label. */ }
-        });
+        }, { once: true });
         section.querySelector('p').textContent = reopenHint;
         section.querySelector('button').onclick = openFromMenu;
         const checkbox = section.querySelector('input');

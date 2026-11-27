@@ -1,3 +1,4 @@
+/*! 星垂 · 潮汐来信 | Alina12901/tide-mobile-lite | 版本记录见 provenance.json */
 const ctx = () => SillyTavern.getContext();
 const mobile = matchMedia('(max-width:800px), (pointer:coarse) and (max-height:800px) and (orientation:landscape)');
 const root = document.documentElement;
@@ -79,7 +80,19 @@ function mountLaunchControls() {
         section.innerHTML = `<summary class="inline-drawer-header"><b>潮汐来信</b></summary>
             <button type="button" class="menu_button">打开潮汐来信</button>
             <label class="checkbox_label"><input type="checkbox">在原版酒馆显示悬浮按钮</label>
-            <p></p>`;
+            <p></p>
+            <small data-tide-source>星垂 · <a href="https://github.com/Alina12901/tide-mobile-lite" target="_blank" rel="noopener noreferrer">官方仓库</a></small>`;
+        section.addEventListener('toggle', async function showSource() {
+            if (!section.open) return;
+            section.removeEventListener('toggle', showSource);
+            // Read only the local release label when this drawer is first opened.
+            try {
+                const response = await fetch(new URL('./provenance.json', import.meta.url));
+                if (!response.ok) return;
+                const release = await response.json();
+                section.querySelector('[data-tide-source]').append(` · 溯源码 ${release.code}`);
+            } catch { /* The source link also works without the local label. */ }
+        });
         section.querySelector('p').textContent = reopenHint;
         section.querySelector('button').onclick = openFromMenu;
         const checkbox = section.querySelector('input');

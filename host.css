@@ -1,3 +1,4 @@
+/*! 星垂 · 潮汐来信 | Alina12901/tide-mobile-lite */
 #tide-mobile-shell[hidden],#tide-mobile-dock[hidden],#tide-mobile-night[hidden]{display:none!important}
 #tide-mobile-shell{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;margin:0!important;padding:0!important;border:0!important;z-index:29900;background:#eee2dc}
 #tide-mobile-dock{position:fixed;right:5px;top:calc(var(--topBarBlockSize,42px) + max(5px,env(safe-area-inset-top)));z-index:2900;display:flex;gap:2px;background:#403746ce;border:1px solid #eedee64a;border-radius:18px;backdrop-filter:blur(7px)}

@@ -144,7 +144,7 @@ export function enhanceBatch(cards) {
             for (const other of block.querySelectorAll(`.character_select.${CARD}.${FLIPPED}`)) {
                 if (other !== card) setFlipped(other, false);
             }
-            loadCard(card).then(async()=>{if(!card.isConnected)return;const c=contextOf(),ch=c.characters.find(x=>x?.avatar===record.avatar);if(!ch)return;const [world,preset]=record.back.querySelectorAll('.meta span');try{world.textContent=await parent.starTideMobile.books(ch);preset.textContent=c.getPresetManager()?.findPreset(ch.name)!=null?ch.name:''}catch{}});
+            loadCard(card).then(async()=>{if(!card.isConnected)return;const c=contextOf(),ch=c.characters.find(x=>x?.avatar===record.avatar);if(!ch)return;const [world,preset]=record.back.querySelectorAll('.meta span');try{const bookNames=await parent.starTideMobile.linkedBooks(ch);world.replaceChildren(...bookNames.map(name=>{const link=el(document,'button','tide-book-link',name+' ›');link.type='button';link.dataset.book=name;link.ariaLabel='打开世界书：'+name;return link}));preset.textContent=c.getPresetManager()?.findPreset(ch.name)!=null?ch.name:''}catch{}});
         }
 
         card.classList.toggle(FLIPPED, on);
@@ -192,6 +192,7 @@ export function enhanceBatch(cards) {
         if (!card || !block.contains(card)) return;
 
         // 「进入聊天」交回酒馆原生逻辑：它会记住选中角色并打开聊天
+        if(target.closest('.tide-book-link'))return;
         if (target.closest('.star-enter')) {
             setFlipped(card, false);
             return;

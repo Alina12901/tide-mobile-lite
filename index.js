@@ -98,9 +98,54 @@ document.addEventListener('click', event => {
     portraitViewer = viewer;
     viewer.showModal();
 }, true);
+// Keep the compact reader independent of the native auto-expand preference.
+function compactReasoning(chat) {
+    const selector = 'details.mes_reasoning_details';
+    const userChoice = new WeakMap();
+    const autoOpened = new WeakSet();
+    function fold(block) {
+        if (!block.open || userChoice.get(block) === true) return;
+        if (!userChoice.has(block)) autoOpened.add(block);
+        block.open = false;
+    }
+    function remember(event) {
+        const header = event.target.closest('.mes_reasoning_header');
+        const block = header?.closest(selector);
+        if (block?.querySelector('.mes_reasoning:not(:empty)')) userChoice.set(block, !block.open);
+    }
+    function onToggle(event) {
+        if (event.target.matches(selector)) fold(event.target);
+    }
+    // Only inspect inserted message rows, never the changing text of a stream.
+    const rows = new MutationObserver(records => {
+        for (const record of records) for (const node of record.addedNodes) {
+            if (node.matches?.('.mes')) node.querySelectorAll(selector + '[open]').forEach(fold);
+        }
+    });
+    rows.observe(chat, { childList: true });
+    chat.addEventListener('click', remember, true);
+    chat.addEventListener('toggle', onToggle, true);
+    chat.querySelectorAll(selector + '[open]').forEach(fold);
+    return () => {
+        rows.disconnect();
+        chat.removeEventListener('click', remember, true);
+        chat.removeEventListener('toggle', onToggle, true);
+        chat.querySelectorAll(selector).forEach(block => {
+            if (autoOpened.has(block) && !userChoice.has(block)) block.open = true;
+        });
+    };
+}
+let stopCompactReasoning;
 function reading(active) {
     if (!active && portraitViewer?.open) portraitViewer.close();
-    root.toggleAttribute('data-tide-reading', active && mobile.matches && !original());
+    const enabled = active && mobile.matches && !original();
+    root.toggleAttribute('data-tide-reading', enabled);
+    const chat = document.getElementById('chat');
+    if (enabled && chat) stopCompactReasoning ??= compactReasoning(chat);
+    else if (stopCompactReasoning) {
+        stopCompactReasoning();
+        stopCompactReasoning = null;
+    }
 }
 document.body.append(frame, dock);
 function syncPortrait(){

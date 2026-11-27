@@ -2,6 +2,8 @@ const ctx = () => SillyTavern.getContext();
 const mobile = matchMedia('(max-width:800px), (pointer:coarse) and (max-height:800px) and (orientation:landscape)');
 const root = document.documentElement;
 const pref = () => ctx().accountStorage;
+const showLauncher = () => pref().getItem('tide-mobile-launcher') !== '0';
+const reopenHint = '如果想再打开，就在魔术棒里或是拓展这打开，浮在页面上的按钮可以选择存在或关闭。';
 const original = () => pref().getItem('tide-mobile-original') === '1';
 // Dress the existing startup loader. Its lifetime stays with SillyTavern, including
 // early dismissal for onboarding and errors that need the user's attention.
@@ -46,7 +48,7 @@ function appearance(){
     root.toggleAttribute('data-tide-mobile', active);
     const dark = pref().getItem('tide-mobile-night') === '1';
     root.toggleAttribute('data-tide-night', active && dark);
-    dock.hidden = !mobile.matches || !frame.hidden;
+    dock.hidden = !mobile.matches || !frame.hidden || !showLauncher();
     return dark;
 }
 function toggleNight(){pref().setItem('tide-mobile-night',appearance()?'0':'1');return appearance()}
@@ -59,10 +61,53 @@ function show(){
     if (!frame.src) frame.src = new URL('shell.html',import.meta.url).href;
     else if(frame.contentWindow?.showTideHome){frame.hidden=false;appearance();frame.contentWindow.showTideHome()}
 }
-launcher.onclick=show;
+function openFromMenu() {
+    if (!mobile.matches) return;
+    if (root.hasAttribute('data-tide-tool')) toolModule?.closeTool();
+    else {
+        const drawer = document.querySelector('#extensions-settings-button');
+        if (drawer?.querySelector(':scope > .openDrawer')) drawer.querySelector(':scope > .drawer-toggle')?.click();
+    }
+    show();
+}
+launcher.onclick = openFromMenu;
+function mountLaunchControls() {
+    const settings = document.getElementById('extensions_settings');
+    if (settings && !document.getElementById('tide-launch-settings')) {
+        const section = document.createElement('details');
+        section.id = 'tide-launch-settings';
+        section.innerHTML = `<summary class="inline-drawer-header"><b>潮汐来信</b></summary>
+            <button type="button" class="menu_button">打开潮汐来信</button>
+            <label class="checkbox_label"><input type="checkbox">在原版酒馆显示悬浮按钮</label>
+            <p></p>`;
+        section.querySelector('p').textContent = reopenHint;
+        section.querySelector('button').onclick = openFromMenu;
+        const checkbox = section.querySelector('input');
+        checkbox.checked = showLauncher();
+        checkbox.onchange = () => {
+            pref().setItem('tide-mobile-launcher', checkbox.checked ? '1' : '0');
+            appearance();
+        };
+        settings.append(section);
+    }
+    const menu = document.getElementById('extensionsMenu');
+    if (menu && !document.getElementById('tide-wand-launch')) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.id = 'tide-wand-launch';
+        button.className = 'list-group-item flex-container flexGap5';
+        button.innerHTML = '<i aria-hidden="true" class="fa-solid fa-envelope-open-text extensionsMenuExtensionButton"></i><span>打开潮汐来信</span>';
+        button.onclick = openFromMenu;
+        menu.append(button);
+    }
+    for (const id of ['tide-launch-settings', 'tide-wand-launch']) {
+        const control = document.getElementById(id);
+        if (control) control.hidden = !mobile.matches;
+    }
+}
 const drawerIds={'世界书':'WI-SP-button','API 连接':'sys-settings-button','预设与提示词':'ai-config-button','高级格式':'advanced-formatting-button','用户人设':'persona-management-button','群聊':'rightNavHolder','原版角色管理':'rightNavHolder','扩展与正则':'extensions-settings-button','酒馆背景':'backgrounds-button','偏好与快捷指令':'user-settings-button','用户设置':'user-settings-button'};
 let opening=false;
-window.starTideMobile={ctx,appearance,toggleNight,reading,
+window.starTideMobile={ctx,appearance,toggleNight,reading,reopenHint,
     atlasStore:()=>import('./atlas-store.js'),
     ready(){if(mobile.matches&&!original()){frame.hidden=false;appearance();frame.contentWindow.showTideHome()}},
     restore(){pref().setItem('tide-mobile-original','1');hide()},
@@ -80,7 +125,7 @@ window.starTideMobile={ctx,appearance,toggleNight,reading,
     background(){return document.querySelector('#bg1')?.style.backgroundImage||''},
     async books(ch){const {world_info}=await import('/scripts/world-info.js');return [...new Set([ch.data?.extensions?.world,...(world_info.charLore?.find(x=>x.name===ch.avatar.replace(/\.[^.]+$/,''))?.extraBooks||[]),ch.data?.character_book?.name].filter(Boolean))].join('、')},
 };
-function adapt(){if(!mobile.matches)hide();else if(!original())show();appearance()}
+function adapt(){mountLaunchControls();if(!mobile.matches)hide();else if(!original())show();appearance()}
 mobile.addEventListener('change',adapt);
 ctx().eventSource.on(ctx().eventTypes.APP_READY,()=>{adapt();syncPortrait()});
 for(const event of ['CHAT_CHANGED','GROUP_UPDATED','MESSAGE_RECEIVED']){

@@ -95,38 +95,40 @@ html[data-tide-tool] [data-tide-page] :is(h3,h4){font-family:'Songti SC',SimSun,
 html[data-tide-tool] [data-tide-page] :is(#main-API-selector-block,#kobold_horde,#kobold_api,#novel_api,#openai_api,#textgenerationwebui_api){padding:12px;margin-bottom:10px;border:1px solid var(--tt-line);background:var(--tt-card);border-radius:14px}
 html[data-tide-tool] [data-tide-page] a{color:var(--tt-muted);text-underline-offset:3px}html[data-tide-tool] [data-tide-page] .checkbox_label{min-height:34px}
 
-.tide-letter-caption { display: none; }
-@media (max-width: 800px) {
-    dialog.popup:has(#loader.tide-letter) {
-        position: fixed; inset: 0; width: 100dvw !important; height: 100dvh !important;
-        max-width: none !important; max-height: none !important; min-height: 0;
-        margin: 0; padding: 0; border: 0; border-radius: 0;
-        background: #cfbcc2;
-    }
-    dialog.popup:has(#loader.tide-letter) :is(.popup-body,.popup-content) {
-        width: 100%; height: 100%; max-height: none; padding: 0; margin: 0;
-    }
-    #loader.splash-screen.tide-letter {
-        position: absolute; inset: 0; margin: 0; padding: 0;
-        background: #cfbcc2 url('./letter.webp') center / cover no-repeat;
-    }
-    #loader.tide-letter :is(.splash-logo,.splash-message,#load-spinner) { display: none; }
-    #loader.tide-letter #load-spinner { transition-duration: 0s; }
-    .tide-letter-caption {
-        display: grid; justify-items: center; gap: clamp(10px,2dvh,21px);
-        position: absolute; left: 10%; right: 10%; bottom: max(17%,env(safe-area-inset-bottom));
-        color: #544653; font: 500 clamp(20px,5vw,32px)/1.35 'Songti SC',SimSun,serif;
-        letter-spacing: .13em; text-shadow: 0 1px 3px #fff8;
-    }
-    .tide-letter-caption::after {
-        content: ''; width: 70%; height: 6px; border: 1px solid #fff9; border-radius: 1rem;
-        background: linear-gradient(95deg,transparent 26%,#aa94a5 48%,#f9e0dc 54%,transparent 73%) 100% 0 / 200% 100%, #bca7b24d;
-        animation: tide-letter-shimmer 2s ease-in-out infinite alternate;
-    }
-    @keyframes tide-letter-shimmer { to { background-position: 0 0; } }
-    @media (prefers-reduced-motion: reduce) { .tide-letter-caption::after { animation: none; background-position: 50% 0; } }
-    @media (orientation: landscape) { #loader.tide-letter { background-position: center 54%; } .tide-letter-caption { bottom: 5%; } }
+/* Use a real image rather than a theme-overridable loader background. */
+.tide-startup-cover {
+    position: fixed !important; inset: 0; width: 100vw !important; height: 100dvh !important; z-index: 2147483646;
+    display: grid; place-items: center; isolation: isolate;
+    overflow: hidden; background: linear-gradient(#948895,#dbcbce 66%,#ae9eaa);
+    color: #544653; text-shadow: none;
 }
+.tide-startup-cover > img {
+    position: absolute; inset: 0; width: 100%; height: 100%; max-width: none;
+    max-height: none; object-fit: contain !important; object-position: center; pointer-events: none;
+}
+.tide-startup-cover > .tide-letter-caption {
+    position: absolute; top: calc(50% + min(48vw, 25dvh));
+    display: grid; justify-items: center; gap: min(2dvh, 14px);
+    font: 500 clamp(16px, 3dvh, 27px)/1.35 'Songti SC', SimSun, serif;
+    letter-spacing: .13em; color: #544653;
+}
+.tide-letter-caption::after {
+    content: ''; width: min(60vw, 33dvh); height: 6px; border: 1px solid #fff9; border-radius: 1rem;
+    background: linear-gradient(95deg,transparent 26%,#aa94a5 48%,#f9e0dc 54%,transparent 73%) 100% 0 / 200% 100%, #bca7b24d;
+    animation: tide-letter-shimmer 2s ease-in-out infinite alternate;
+}
+@keyframes tide-letter-shimmer { to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .tide-letter-caption::after { animation: none; } }
+.tide-startup-cover > button {
+    position: absolute; bottom: max(12px, env(safe-area-inset-bottom)); padding: 10px 16px;
+    border-radius: 24px; border: 1px solid #afa1aa; background: #eee4e6; color: #544653;
+}
+dialog.tide-startup-dialog[open] {
+    position: fixed !important; inset: 0 !important; width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important; margin: 0 !important; padding: 0;
+    border: 0; border-radius: 0; transform: none !important;
+}
+dialog.tide-startup-dialog #load-spinner { transition-duration: 0s; }
 
 /* The shell owns the reading header; the live transcript and composer occupy the rest. */
 html[data-tide-reading] { --tide-reading-head: calc(63px + env(safe-area-inset-top, 0px)); }

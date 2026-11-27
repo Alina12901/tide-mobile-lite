@@ -6,17 +6,49 @@ const pref = () => ctx().accountStorage;
 const showLauncher = () => pref().getItem('tide-mobile-launcher') !== '0';
 const reopenHint = '如果想再打开，就在魔术棒里或是拓展这打开，浮在页面上的按钮可以选择存在或关闭。';
 const original = () => pref().getItem('tide-mobile-original') === '1';
-// Dress the existing startup loader. Its lifetime stays with SillyTavern, including
-// early dismissal for onboarding and errors that need the user's attention.
-const startupLoader = mobile.matches && !original() && document.querySelector('#loader.splash-screen');
-if (startupLoader) {
-    startupLoader.classList.add('tide-letter');
-    const caption = document.createElement('div');
+// The native splash can close before the shell has painted. Keep the same
+// artwork underneath it so the handoff also works on slower devices.
+let startupCover, nativeCover, startupDialog, recoveryTimer;
+function finishStartup() {
+    clearTimeout(recoveryTimer);
+    startupCover?.remove();
+    nativeCover?.remove();
+    startupDialog?.classList.remove('tide-startup-dialog');
+    startupCover = nativeCover = startupDialog = null;
+}
+function startLetter() {
+    const cover = document.createElement('div');
+    cover.className = 'tide-startup-cover';
+    const art = new Image();
+    art.alt = '';
+    art.fetchPriority = 'high';
+    art.src = new URL('./letter.webp', import.meta.url).href;
+    const caption = document.createElement('span');
     caption.className = 'tide-letter-caption';
     caption.setAttribute('role', 'status');
     caption.textContent = '载入中…';
-    startupLoader.append(caption);
+    cover.append(art, caption);
+    startupCover = cover;
+    document.body.append(cover);
+    startupDialog = document.querySelector('#loader')?.closest('dialog');
+    if (startupDialog) {
+        startupDialog.classList.add('tide-startup-dialog');
+        nativeCover = cover.cloneNode(true);
+        startupDialog.append(nativeCover);
+    }
+    // Only offer recovery if the host or shell is taking unusually long.
+    recoveryTimer = setTimeout(() => {
+        for (const layer of [startupCover, nativeCover]) {
+            if (!layer?.isConnected) continue;
+            const exit = document.createElement('button');
+            exit.type = 'button';
+            exit.textContent = '返回原版酒馆';
+            exit.onclick = () => window.starTideMobile.restore();
+            layer.append(exit);
+        }
+    }, 12000);
 }
+if (mobile.matches && !original()) startLetter();
 const frame = document.createElement('iframe');
 frame.id = 'tide-mobile-shell';
 frame.title = '潮汐来信';
@@ -54,7 +86,7 @@ function appearance(){
 }
 function toggleNight(){pref().setItem('tide-mobile-night',appearance()?'0':'1');return appearance()}
 
-function hide(){reading(false);toolModule?.closeTool();frame.hidden=true;frame.contentWindow?.suspendTide?.();appearance()}
+function hide(){finishStartup();reading(false);toolModule?.closeTool();frame.hidden=true;frame.contentWindow?.suspendTide?.();appearance()}
 function show(){
     if (!mobile.matches) return;
     pref().setItem('tide-mobile-original','0');
@@ -127,7 +159,16 @@ const drawerIds={'世界书':'WI-SP-button','API 连接':'sys-settings-button','
 let opening=false;
 window.starTideMobile={ctx,appearance,toggleNight,reading,reopenHint,
     atlasStore:()=>import('./atlas-store.js'),
-    ready(){if(mobile.matches&&!original()){frame.hidden=false;appearance();frame.contentWindow.showTideHome()}},
+    ready() {
+        if (!mobile.matches || original()) return;
+        frame.hidden = false;
+        appearance();
+        frame.contentWindow.showTideHome();
+        // The initial home is built synchronously; recents can arrive later.
+        if (startupCover && frame.contentDocument.querySelector('#home .tiles')) {
+            requestAnimationFrame(() => requestAnimationFrame(finishStartup));
+        }
+    },
     restore(){pref().setItem('tide-mobile-original','1');hide()},
     async drawer(label,options={}){const id=drawerIds[label];if(!id)throw Error('这个工具暂时不可用');toolModule=await import('./tool-page.js');if(!mobile.matches||original()||frame.hidden)return;
         return toolModule.openTool({id,label,book:options.book,scope:options.scope,theme:toggleNight,back:()=>{frame.contentWindow?.refreshTideTheme?.();options.after?.()}})},

@@ -27,8 +27,8 @@ export function enhanceBatch(cards) {
     const doc = document;
     const contextOf = parent.starTideMobile.ctx;
     const block = doc.getElementById('rm_print_characters_block');
-    const list = contextOf().characters;
-    for (const card of cards) enhance(card, list);
+    const context = contextOf();
+    for (const card of cards) enhance(card, context);
     if (!block.dataset.flipBound) {
         block.dataset.flipBound = '1';
         doc.documentElement.classList.add(ROOT);
@@ -36,13 +36,12 @@ export function enhanceBatch(cards) {
         block.addEventListener('keydown', onKey);
     }
     const root = doc.documentElement;
-    function enhance(card, list) {
+    function enhance(card, context) {
         const id = Number(card.getAttribute('data-chid'));
-        const character = Number.isInteger(id) ? list[id] : undefined;
+        const character = Number.isInteger(id) ? context.characters[id] : undefined;
         if (!character || typeof character.avatar !== 'string') return;
 
         const name = String(character.name || card.querySelector('.ch_name')?.textContent || '').trim() || '未名';
-        const context = contextOf();
         const user = String(context?.name1 || '').trim() || '你';
         const note = brief(cleanText(character.data?.creator_notes, name, user), 54);
         const avatar = character.avatar && character.avatar !== 'none' ? character.avatar : '';
@@ -55,7 +54,7 @@ export function enhanceBatch(cards) {
 
         const stage = el(doc, 'div', STAGE);
         const front = el(doc, 'div', `${FACE} star-front`);
-        const back = el(doc, 'div', `${FACE} star-back`);
+
 
         /* 正面 */
         const cover = el(doc, 'img', 'star-cover');
@@ -85,6 +84,14 @@ export function enhanceBatch(cards) {
             front.classList.add('is-tight');
         }
 
+        stage.append(front);
+        card.append(stage);
+        records.set(card, { id, avatar, name, front });
+    }
+
+    function buildBack(record) {
+        const {id, name, front} = record;
+        const back = el(doc, 'div', `${FACE} star-back`);
         /* 背面 */
         const top = el(doc, 'div', 'star-back-top');
         top.appendChild(el(doc, 'span', 'star-back-kicker', '角 色 小 传'));
@@ -105,15 +112,9 @@ export function enhanceBatch(cards) {
         for(const label of ['世界书','预设']){const row=el(doc,'div','');row.append(el(doc,'i','',label),el(doc,'span',''));meta.append(row)}
         back.append(meta,enter);
 
-        stage.appendChild(front);
-        stage.appendChild(back);
-        card.appendChild(stage);
-
         back.inert = true;
-        records.set(card, { id, avatar, name, desc, front, back, loaded: false, loading: false });
-
-        /* 让读出的简介即使有误也不会闪：先按需拉全文 */
-
+        front.after(back);
+        Object.assign(record, { back, desc });
     }
 
     /** 短句用更安静的排法，免得正文只在卡片中间占两行。 */
@@ -141,6 +142,7 @@ export function enhanceBatch(cards) {
         if (!record) return;
 
         if (on) {
+            if (!record.back) buildBack(record);
             for (const other of block.querySelectorAll(`.character_select.${CARD}.${FLIPPED}`)) {
                 if (other !== card) setFlipped(other, false);
             }
@@ -214,6 +216,7 @@ export function enhanceBatch(cards) {
             setFlipped(card, !card.classList.contains(FLIPPED));
         } else if (event.key === 'Escape' && card.classList.contains(FLIPPED)) {
             event.preventDefault();
+            event.stopPropagation();
             setFlipped(card, false);
         }
     }

@@ -1,3 +1,4 @@
+import { mountSavedNotes, reasoningStatus } from './reading-notes.js';
 import { background_settings } from '/scripts/backgrounds.js';
 /*! 星垂 · 潮汐来信 | Alina12901/tide-mobile-lite | 版本记录见 provenance.json */
 const ctx = () => SillyTavern.getContext();
@@ -100,6 +101,7 @@ document.addEventListener('click', event => {
 }, true);
 // Keep the compact reader independent of the native auto-expand preference.
 function compactReasoning(chat) {
+    const stopSavedNotes = mountSavedNotes(chat, ctx);
     const selector = 'details.mes_reasoning_details';
     const userChoice = new WeakMap();
     const autoOpened = new WeakSet();
@@ -127,6 +129,7 @@ function compactReasoning(chat) {
     chat.addEventListener('toggle', onToggle, true);
     chat.querySelectorAll(selector + '[open]').forEach(fold);
     return () => {
+        stopSavedNotes();
         rows.disconnect();
         chat.removeEventListener('click', remember, true);
         chat.removeEventListener('toggle', onToggle, true);
@@ -238,7 +241,7 @@ function mountLaunchControls() {
 }
 const drawerIds={'世界书':'WI-SP-button','API 连接':'sys-settings-button','预设与提示词':'ai-config-button','高级格式':'advanced-formatting-button','用户人设':'persona-management-button','群聊':'rightNavHolder','原版角色管理':'rightNavHolder','扩展与正则':'extensions-settings-button','酒馆背景':'backgrounds-button','用户设置':'user-settings-button'};
 let opening=false;
-window.starTideMobile={ctx,appearance,toggleNight,reading,reopenHint,
+window.starTideMobile={reasoningStatus: () => reasoningStatus(ctx()),ctx,appearance,toggleNight,reading,reopenHint,
     atlasStore:()=>import('./atlas-store.js'),
     ready() {
         if (!mobile.matches || original()) return;

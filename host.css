@@ -190,3 +190,19 @@ html[data-tide-reading] #chat .mes_reasoning_details {
     }
     .mes_reasoning pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 }
+
+html[data-tide-reading] #chat .mes .mes_reasoning_details:has(.mes_reasoning:not(:empty)) { display: block !important; }
+html[data-tide-reading] #chat .mes .mes_reasoning_details:has(.mes_reasoning:not(:empty)):not(:has(.reasoning_edit_textarea)) :is(.mes_reasoning_summary,.mes_reasoning_header_block,.mes_reasoning_header) { display: flex !important; }
+html[data-tide-reading] #chat .mes .mes_reasoning_details[open]:not(:has(.reasoning_edit_textarea)) .mes_reasoning:not(:empty) { display: block !important; }
+html[data-tide-reading] #chat .tide-saved-notes { margin: 0 0 3px; }
+html[data-tide-reading] #chat .tide-saved-notes summary {
+    width: fit-content; cursor: pointer; padding: 0 9px; margin: 5px 0;
+    border-radius: 6px; background: rgb(40 36 50 / 62%); color: #e1deeb;
+    font: 500 11px/22px system-ui,sans-serif;
+}
+html[data-tide-reading] #chat .tide-saved-notes > div {
+    padding: 6px 10px; border-inline-start: 2px solid #c6bdd080; border-radius: 0 6px 6px 0;
+    background: rgb(40 36 50 / 48%); color: #ebe8f1; font: 13px/1.6 system-ui,sans-serif;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+}
+html[data-tide-reading] #chat .mes_reasoning_details:has(.mes_reasoning:not(:empty)) ~ .tide-saved-notes { display: none; }

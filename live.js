@@ -1,7 +1,7 @@
 const host=parent.starTideMobile;
 const ctx=host.ctx;
 let page='home',layer='',lastFocus,recents=[],recentError=false,requestId=0;
-const tools={'设定与连接':[['世界书','book'],['API 连接','api'],['预设与提示词','pen'],['高级格式','settings']], '角色与会话':[['角色相册','album'],['原版角色管理','person'],['用户人设','person'],['群聊','chat'],['聊天记录','history']], '工作台':[['Token 用量','box'],['扩展与正则','box'],['主题与背景','palette'],['偏好与快捷指令','settings'],['数据与备份','box']]};
+const tools={'设定与连接':[['世界书','book'],['API 连接','api'],['预设与提示词','pen'],['高级格式','settings']], '角色与会话':[['角色相册','album'],['原版角色管理','person'],['用户人设','person'],['群聊','chat'],['聊天记录','history']], '工作台':[['Token 用量','box'],['扩展与正则','box'],['主题与背景','palette'],['偏好与快捷指令','settings'],['用户设置','box']]};
 function menuItem(k,name,to=name){return `<button class="tool" data-go="${safe(to)}">${I(k)}<span>${safe(name)}</span><i class="tail">›</i></button>`}
 function closePanel(){if(!layer)return;$('#shade').hidden=true;layer='';[...$('#app').children].forEach(node=>node.inert=false);if(lastFocus?.isConnected)lastFocus.focus({preventScroll:true})}
 function fail(err){pop('sheet','暂时无法打开','潮汐来信',`<p class="hint">${safe(err.message||'请稍后重试')}</p>`)}
@@ -69,7 +69,41 @@ async function openAtlas(options={}){
     }catch(err){if(ticket===atlasGeneration)fail(err)}
 }
 window.suspendTide = () => { requestId++; resetDesk();stopAtlas(); releaseCards(); closePanel() };
-function go(k){resetDesk();stopAtlas();closePanel();if(page==='album'&&k!=='album')releaseCards();page=k;$('#album').hidden=k!=='album';$('#home').hidden=k!=='home';$('#brand').innerHTML='<b>星垂</b><small>TAVERN</small>';$('#nav').innerHTML=[['home','首页'],['album','角色'],['chat','聊天']].map(([x,n])=>`<button data-tab="${x}" class="${k===x?'on':''}">${I(x)}${n}</button>`).join('');if(k==='album')gallery();else homeDraw()}
+let chatOrigin = 'home';
+function setReading(active) {
+    $('#app').classList.toggle('reading', active);
+    host.reading?.(active);
+}
+function returnFromChat() {
+    if (chatOrigin === 'album') go('album');
+    else window.showTideHome();
+}
+window.refreshChatTitle = () => {
+    if (page !== 'chat') return;
+    const c = ctx();
+    const group = c.groups?.find(g => c.groupId != null && String(g.id) === String(c.groupId));
+    $('#brand').innerHTML = `<b>${safe(group?.name || c.characters?.[c.characterId]?.name || '当前会话')}</b><small>DIALOGUE</small>`;
+};
+window.showTideChat = () => {
+    if (page === 'home' || page === 'album') chatOrigin = page;
+    requestId++;
+    closePanel();
+    stopAtlas();
+    resetDesk();
+    if (page === 'album') releaseCards();
+    page = 'chat';
+    $('#home').hidden = $('#album').hidden = $('#nav').hidden = true;
+    $('#left').ariaLabel = '返回' + (chatOrigin === 'album' ? '角色相册' : '首页');
+    $('#left').innerHTML = I('left');
+    $('#left').onclick = returnFromChat;
+    $('#right').ariaLabel = '角色资料与会话工具';
+    $('#right').innerHTML = I('person');
+    $('#right').onclick = window.showChatDesk;
+    window.refreshChatTitle();
+    appearance();
+    setReading(true);
+};
+function go(k){setReading(false);resetDesk();stopAtlas();closePanel();if(page==='album'&&k!=='album')releaseCards();page=k;$('#album').hidden=k!=='album';$('#home').hidden=k!=='home';$('#brand').innerHTML='<b>星垂</b><small>TAVERN</small>';$('#nav').innerHTML=[['home','首页'],['album','角色'],['chat','聊天']].map(([x,n])=>`<button data-tab="${x}" class="${k===x?'on':''}">${I(x)}${n}</button>`).join('');if(k==='album')gallery();else homeDraw()}
 function drawer(){pop('drawer','酒馆目录','INDEX　 /　 XINGCHUI',Object.entries(tools).map(([g,items])=>`<p class="cap group">${g}</p>${items.map(([n,k])=>menuItem(k,n)).join('')}`).join(''))}
 function route(n){if(n==='酒馆目录')return drawer();if(n==='世界书')return openAtlas();if(n==='角色相册')return go('album');if(n==='聊天记录')return pop('sheet',n,'CHAT HISTORY',`<div class="glass">${recentList()}</div>`);if(n==='Token 用量'||n==='token')return showLedger();if(n==='主题与背景')return pop('sheet',n,'APPEARANCE',menuItem('palette','选择酒馆背景','酒馆背景')+menuItem('left','恢复原版酒馆','original'));if(n==='original'){closePanel();host.restore();return}return host.drawer(n,{scope:page==='desk'?'当前会话　/　手边工具':'人间清欢　/　WORKSPACE'})}
 window.showTideHome=async()=>{appearance();go('home');const seq=++requestId;try{const res=await fetch('/api/chats/recent',{method:'POST',headers:ctx().getRequestHeaders(),body:JSON.stringify({max:16,pinned:[]})});if(!res.ok)throw Error();const data=await res.json();if(seq!==requestId)return;recents=data.map(noteOf).filter(Boolean);recentError=false}catch{if(seq!==requestId)return;recentError=true}if(page==='home'){
@@ -78,18 +112,20 @@ window.showTideHome=async()=>{appearance();go('home');const seq=++requestId;try{
 }};
 async function resumeChat(){const r=lead();if(r)await host.open(r);else go('album')}
 document.addEventListener('click',async e=>{try{if(e.target===$('#shade')||e.target.closest('[data-close]'))return closePanel();const btn=e.target.closest('[data-go],[data-tab],[data-recent],[data-resume],.star-enter');if(!btn)return;if(btn.matches('.star-enter'))await host.open({avatar:btn.closest('[data-avatar]').dataset.avatar});else if(btn.hasAttribute('data-resume')||btn.dataset.tab==='chat')await resumeChat();else if(btn.hasAttribute('data-recent'))await host.open(recents[Number(btn.dataset.recent)]);else if(btn.dataset.tab)go(btn.dataset.tab);else await route(btn.dataset.go)}catch(err){fail(err)}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(layer)closePanel();else if(atlas)atlas.back();else if(page==='desk')host.hide();else host.hide()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(layer)closePanel();else if(atlas)atlas.back();else if(page==='desk')window.showTideChat();else if(page==='chat')returnFromChat();else if(page==='album')go('home')}});
 icons.moon='M20 14a8.5 8.5 0 0 1-10-11A9 9 0 1 0 20 14z';icons.sun='M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2';$('#left').ariaLabel='全部功能';$('#left').innerHTML=I('menu');$('#left').onclick=drawer;$('#right').ariaLabel='外观选项';$('#right').innerHTML=I('settings');$('#right').onclick=()=>route('主题与背景');$('#lightSwitch').onclick=()=>{host.toggleNight();appearance()};$('#searchLabel').insertAdjacentHTML('afterbegin',I('search'));$('#searchBox').oninput=filterCards;
 
 window.refreshTideTheme=appearance;
 let deskGeneration=0;
-function resetDesk(){deskGeneration++;const desk=$('#desk');if(desk)desk.hidden=true;$('#right').hidden=false;$('#nav').hidden=false;$('#left').onclick=drawer;$('#left').ariaLabel='全部功能';$('#left').innerHTML=I('menu')}
+function resetDesk(){deskGeneration++;$('#right').ariaLabel='外观选项';$('#right').innerHTML=I('settings');$('#right').onclick=()=>route('主题与背景');const desk=$('#desk');if(desk)desk.hidden=true;$('#right').hidden=false;$('#nav').hidden=false;$('#left').onclick=drawer;$('#left').ariaLabel='全部功能';$('#left').innerHTML=I('menu')}
 window.showChatDesk=async()=>{
+    setReading(false);
     closePanel();stopAtlas();const ticket=++deskGeneration;page='desk';appearance();$('#album').hidden=$('#home').hidden=$('#nav').hidden=$('#right').hidden=true;
-    let desk=$('#desk');if(!desk){desk=document.createElement('section');desk.id='desk';desk.className='page pad';$('#nav').before(desk)}desk.hidden=false;$('#brand').innerHTML='<b>星垂</b><small>DIALOGUE</small>';$('#left').innerHTML=I('left');$('#left').ariaLabel='返回当前聊天';$('#left').onclick=()=>host.hide();
+    let desk=$('#desk');if(!desk){desk=document.createElement('section');desk.id='desk';desk.className='page pad';$('#nav').before(desk)}desk.hidden=false;$('#brand').innerHTML='<b>星垂</b><small>DIALOGUE</small>';$('#left').innerHTML=I('left');$('#left').ariaLabel='返回当前聊天';$('#left').onclick=window.showTideChat;
     const c=ctx(),group=c.groups?.find(g=>c.groupId!=null&&String(g.id)===String(c.groupId)),ch=c.characters?.[c.characterId],members=group?(group.members||[]).map(a=>c.characters.find(v=>v?.avatar===a)).filter(Boolean):ch?[ch]:[];
+    const profile = !group && ch ? `<div class="glass detail">${image(ch.avatar).replace('<img','<img class="personpic"')}<p>${safe(String(ch.data?.description || ch.description || '').slice(0, 480))}</p></div>` : '';
     const title=group?.name||ch?.name||'当前会话';const section=(k,t)=>`<div class="sect"><h2>${t}</h2><small>${k}</small></div>`;
-    desk.innerHTML=`<span class="cap">FIELD NOTES　 /　 当前会话</span><h1 class="title">${safe(title)}</h1><p class="hint">在这里翻看设定，返回后继续原来的对话。</p>${section('LINKED BOOKS','关联世界书')}<div class="glass" data-desk-books><p class="blank">正在整理书目…</p></div>${section('WORKSPACE','手边工具')}<div class="glass">${menuItem('api','API 连接')}${menuItem('pen','预设与提示词')}${menuItem('box','Token 用量')}</div><p class="hint" style="margin-top:14px">连接、预设与用量为全局设置。</p>`;
+    desk.innerHTML=`<span class="cap">FIELD NOTES　 /　 当前会话</span><h1 class="title">${safe(title)}</h1>${profile}<p class="hint">在这里翻看设定，返回后继续原来的对话。</p>${section('LINKED BOOKS','关联世界书')}<div class="glass" data-desk-books><p class="blank">正在整理书目…</p></div>${section('WORKSPACE','手边工具')}<div class="glass">${menuItem('api','API 连接')}${menuItem('pen','预设与提示词')}${menuItem('box','Token 用量')}${menuItem('box','酒馆目录')}</div><p class="hint" style="margin-top:14px">连接、预设与用量为全局设置。</p>`;
     try{const bindings=await Promise.all(members.map(async ch=>{if(!ch.data?.extensions&&!ch.data?.description&&c.unshallowCharacter){const i=c.characters.indexOf(ch);if(i>=0)await c.unshallowCharacter(String(i));ch=ctx().characters.find(x=>x?.avatar===ch.avatar)||ch}return host.linkedBooks(ch)}));if(ticket!==deskGeneration||page!=='desk')return;
         const names=[...new Set([c.chatMetadata?.world_info,...bindings.flat()].filter(Boolean))];const box=desk.querySelector('[data-desk-books]');box.innerHTML=names.length?names.map((name,i)=>`<button class="tool" data-bound="${i}">${I('book')}<span>${safe(name)}</span><i class="tail">›</i></button>`).join(''):'<p class="blank">这个会话和角色没有关联世界书。</p>';box.onclick=e=>{const t=e.target.closest('[data-bound]');if(t)openAtlas({book:names[+t.dataset.bound],scope:title})};
     }catch{if(ticket===deskGeneration)desk.querySelector('[data-desk-books]').textContent='暂时无法读取关联书目。'}

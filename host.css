@@ -2,7 +2,7 @@
 #tide-mobile-shell{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;margin:0!important;padding:0!important;border:0!important;z-index:29900;background:#eee2dc}
 #tide-mobile-dock{position:fixed;right:5px;top:calc(var(--topBarBlockSize,42px) + max(5px,env(safe-area-inset-top)));z-index:2900;display:flex;gap:2px;background:#403746ce;border:1px solid #eedee64a;border-radius:18px;backdrop-filter:blur(7px)}
 #tide-mobile-dock button{display:block;width:34px;height:36px;color:#fff0df;border:0;border-radius:18px;background:transparent;cursor:pointer;font:18px/1 Georgia,serif}
-@media(min-width:801px){#tide-mobile-dock,#tide-mobile-shell{display:none!important}}
+
 html[data-tide-mobile][data-tide-mobile]{#sheld, #chat, #form_sheld, #chat .mes {
     background: transparent !important;
     box-shadow: none !important;
@@ -125,4 +125,20 @@ html[data-tide-tool] [data-tide-page] a{color:var(--tt-muted);text-underline-off
     @keyframes tide-letter-shimmer { to { background-position: 0 0; } }
     @media (prefers-reduced-motion: reduce) { .tide-letter-caption::after { animation: none; background-position: 50% 0; } }
     @media (orientation: landscape) { #loader.tide-letter { background-position: center 54%; } .tide-letter-caption { bottom: 5%; } }
+}
+
+/* The shell owns the reading header; the live transcript and composer occupy the rest. */
+html[data-tide-reading] { --tide-reading-head: calc(63px + env(safe-area-inset-top, 0px)); }
+html[data-tide-reading] #tide-mobile-shell {
+    inset: 0 0 auto !important;
+    height: var(--tide-reading-head) !important;
+    background: #302b34;
+    z-index: 2900;
+}
+html[data-tide-reading] :is(#top-bar, #top-settings-holder, #sheldheader) { display: none !important; }
+html[data-tide-reading] #sheld {
+    top: var(--tide-reading-head) !important;
+    height: calc(100dvh - var(--tide-reading-head)) !important;
+    max-height: calc(100dvh - var(--tide-reading-head)) !important;
+    min-height: 0 !important;
 }

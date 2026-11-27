@@ -13,7 +13,7 @@ function noteOf(a){const c=ctx();const group=a.group?c.groups.find(g=>String(g.i
 function image(avatar){return avatar?`<img src="${safe(ctx().getThumbnailUrl('avatar',avatar))}" alt="" loading="lazy">`:''}
 function lead(){const c=ctx(),active=c.chatId&&noteOf({avatar:c.characters[c.characterId]?.avatar,group:c.groupId,file_id:c.chatId,chat_items:c.chat.length});return active||recents[0]}
 function recentList(){return recents.length?recents.map((r,i)=>`<button class="listing" data-recent="${i}">${image(r.avatar).replace('<img','<img class="thumb"')}<span class="rinfo"><b>${safe(r.name)}</b><small>${safe(r.file||'')}</small></span><span>›</span></button>`).join(''):`<p class="blank">${recentError?'最近会话读取失败':'暂无最近会话'}</p>`}
-function resumeContent(){const r=lead();return `${image(r?.avatar)}<small class="en">${r?`继续上次聊天　 /　 第 ${r.count??0} 章`:'开启一段聊天'}</small><h2>${safe(r?.name||'选择角色')}</h2><span class="next">${I('next')}</span>`}
+function resumeContent(){const r=lead();return `${r?.avatar ? `<img src="/characters/${safe(encodeURIComponent(r.avatar))}" alt="" decoding="async">` : ''}<small class="en">${r?`继续上次聊天　 /　 第 ${r.count??0} 章`:'开启一段聊天'}</small><h2>${safe(r?.name||'选择角色')}</h2><span class="next">${I('next')}</span>`}
 function homeDraw(){
     if ($('#home .hero')) {
         $('#home [data-resume]').innerHTML = resumeContent();
@@ -140,7 +140,7 @@ async function refreshUpdate(manual) {
     if (status()) status().textContent = versionState;
 }
 window.addEventListener('load', () => setTimeout(() => refreshUpdate(false), 1600), {once:true});
-function route(n){if(n==='酒馆目录')return drawer();if(n==='世界书')return openAtlas();if(n==='角色相册')return go('album');if(n==='聊天记录')return pop('sheet',n,'CHAT HISTORY',`<div class="glass">${recentList()}</div>`);if(n==='Token 用量'||n==='token')return showLedger();if(n==='主题与背景')return themePanel();if(n==='检查更新')return refreshUpdate(true);if(n==='hero-default'||n==='hero-global'){host.heroGlobal(n==='hero-global');appearance();return themePanel()}if(n==='original'){closePanel();host.restore();return}return host.drawer(n,{scope:page==='desk'?'当前会话　/　手边工具':'人间清欢　/　WORKSPACE'})}
+function route(n){if(n==='编辑绑定人设')return host.drawer('用户人设',{scope:'当前会话　/　搭配人设',after:refreshDeskPersona});if(n==='酒馆目录')return drawer();if(n==='世界书')return openAtlas();if(n==='角色相册')return go('album');if(n==='聊天记录')return pop('sheet',n,'CHAT HISTORY',`<div class="glass">${recentList()}</div>`);if(n==='Token 用量'||n==='token')return showLedger();if(n==='主题与背景')return themePanel();if(n==='检查更新')return refreshUpdate(true);if(n==='hero-default'||n==='hero-global'){host.heroGlobal(n==='hero-global');appearance();return themePanel()}if(n==='original'){closePanel();host.restore();return}return host.drawer(n,{scope:page==='desk'?'当前会话　/　手边工具':'人间清欢　/　WORKSPACE'})}
 window.showTideHome=async()=>{appearance();go('home');const seq=++requestId;try{const res=await fetch('/api/chats/recent',{method:'POST',headers:ctx().getRequestHeaders(),body:JSON.stringify({max:16,pinned:[]})});if(!res.ok)throw Error();const data=await res.json();if(seq!==requestId)return;recents=data.map(noteOf).filter(Boolean);recentError=false}catch{if(seq!==requestId)return;recentError=true}if(page==='home'){
     $('#home [data-resume]').innerHTML=resumeContent();
     $('#home .recentShort').innerHTML=recentList();
@@ -153,13 +153,29 @@ icons.moon='M20 14a8.5 8.5 0 0 1-10-11A9 9 0 1 0 20 14z';icons.sun='M16 12a4 4 0
 window.refreshTideTheme=appearance;
 let deskGeneration=0;
 function resetDesk(){deskGeneration++;$('#right').ariaLabel='外观选项';$('#right').innerHTML=I('settings');$('#right').onclick=()=>route('主题与背景');const desk=$('#desk');if(desk)desk.hidden=true;$('#right').hidden=false;$('#nav').hidden=false;$('#left').onclick=drawer;$('#left').ariaLabel='全部功能';$('#left').innerHTML=I('menu')}
+function refreshDeskPersona() {
+    const box = $('#desk [data-desk-persona]');
+    if (!box) return;
+    const c = ctx(), settings = c.powerUserSettings || {};
+    const group = c.groupId != null && c.groupId !== '';
+    const target = group ? c.groupId : c.characters?.[c.characterId]?.avatar;
+    const name = id => settings.personas?.[id] || id;
+    const bound = Object.entries(settings.persona_descriptions || {}).filter(([, profile]) =>
+        profile?.connections?.some(link => link.type === (group ? 'group' : 'character') && String(link.id) === String(target))
+    ).map(([id]) => name(id));
+    const locked = c.chatMetadata?.persona;
+    box.innerHTML = `<p>${group ? '本群绑定' : '此卡绑定'} · ${safe(bound.join('、') || '未绑定')}</p>` +
+        (locked ? `<p>本聊天锁定 · ${safe(name(locked))}</p>` : '') +
+        `<p>当前使用 · ${safe(c.name1 || '未选择')}</p>` + menuItem('pen','修改人设与绑定','编辑绑定人设');
+}
 window.showChatDesk=async()=>{
     setReading(false);
     closePanel();stopAtlas();const ticket=++deskGeneration;page='desk';appearance();$('#album').hidden=$('#home').hidden=$('#nav').hidden=$('#right').hidden=true;
     let desk=$('#desk');if(!desk){desk=document.createElement('section');desk.id='desk';desk.className='page pad';$('#nav').before(desk)}desk.hidden=false;$('#brand').innerHTML='<b>星垂</b><small>DIALOGUE</small>';$('#left').innerHTML=I('left');$('#left').ariaLabel='返回当前聊天';$('#left').onclick=window.showTideChat;
     const c=ctx(),group=c.groups?.find(g=>c.groupId!=null&&String(g.id)===String(c.groupId)),ch=c.characters?.[c.characterId],members=group?(group.members||[]).map(a=>c.characters.find(v=>v?.avatar===a)).filter(Boolean):ch?[ch]:[];
     const title=group?.name||ch?.name||'当前会话';const section=(k,t)=>`<div class="sect"><h2>${t}</h2><small>${k}</small></div>`;
-    desk.innerHTML=`<span class="cap">FIELD NOTES　 /　 当前会话</span><h1 class="title">${safe(title)}</h1><div data-profiles></div>${section('LINKED BOOKS','关联世界书')}<div class="glass" data-desk-books><p class="blank">正在整理书目…</p></div>${section('WORKSPACE','手边工具')}<div class="glass">${menuItem('api','API 连接')}${menuItem('pen','预设与提示词')}${menuItem('box','Token 用量')}${menuItem('box','酒馆目录')}</div><p class="hint" style="margin-top:14px">连接、预设与用量为全局设置。</p>`;
+    desk.innerHTML=`<span class="cap">FIELD NOTES　 /　 当前会话</span><h1 class="title">${safe(title)}</h1><div data-profiles></div>${section('PERSONA','搭配人设')}<div class="glass deskPersona" data-desk-persona></div>${section('LINKED BOOKS','关联世界书')}<div class="glass" data-desk-books><p class="blank">正在整理书目…</p></div>${section('WORKSPACE','手边工具')}<div class="glass">${menuItem('api','API 连接')}${menuItem('pen','预设与提示词')}${menuItem('box','Token 用量')}${menuItem('box','酒馆目录')}</div><p class="hint" style="margin-top:14px">连接、预设与用量为全局设置。</p>`;
+    refreshDeskPersona();
     desk.scrollTop = 0;
     const inflight = new Map();
     async function resolveCharacter(member) {

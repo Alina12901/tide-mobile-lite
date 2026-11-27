@@ -7,7 +7,7 @@ export async function openTool({id,label,scope,book,theme,back}){
     const drawer=document.getElementById(id),panel=drawer?.querySelector(':scope > .drawer-content'),toggle=drawer?.querySelector(':scope > .drawer-toggle');
     if(!toggle||!panel)throw Error('这个版本的酒馆没有提供此面板。');
     const root=document.documentElement, head=document.createElement('header');
-    head.id='tide-tool-head';head.innerHTML='<button type="button" aria-label="返回上一页">‹</button><div><small></small><b></b></div><button type="button" aria-label="切换日夜"></button>';
+    head.id='tide-tool-head';head.innerHTML='<button type="button" class="tide-back" aria-label="返回上一页"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/></svg></button><div><small></small><b></b></div><button type="button" aria-label="切换日夜"></button>';
     head.querySelector('small').textContent=scope||'人间清欢　/　WORKSPACE';head.querySelector('b').textContent=label;
     for(const type of ['click','pointerdown','mousedown','touchstart','touchend'])head.addEventListener(type,e=>e.stopPropagation());
     const [ret,night]=head.querySelectorAll('button');function light(){night.textContent=root.hasAttribute('data-tide-night')?'☀':'☾'}night.onclick=()=>{theme();light()};light();
@@ -31,6 +31,6 @@ export async function openTool({id,label,scope,book,theme,back}){
     const observer=new MutationObserver(()=>{if(panel.classList.contains('openDrawer'))opened=true;else if(opened)close()});observer.observe(panel,{attributes:true,attributeFilter:['class']});
     session={close};ret.onclick=close;window.addEventListener('keydown',esc,true);root.dataset.tideTool='';drawer.dataset.tideTarget='';panel.dataset.tidePage='';document.body.append(head);
     try{if(!wasOpen){const {doNavbarIconClick}=await import('/script.js');if(!live)return;await doNavbarIconClick.call(toggle);if(!live){if(panel.classList.contains('openDrawer'))toggle.click();return}}opened=true;
-        if(book){const wi=await import('/scripts/world-info.js');if(!live)return;if(!wi.world_names?.includes(book))throw Error('这本书已不在酒馆书架上。');wi.reloadEditor(book,true);refreshSummary()}ret.focus({preventScroll:true});
+        if(book){const wi=await import('/scripts/world-info.js');if(!live)return;if(!wi.world_names?.includes(book))throw Error('这本书已不在酒馆书架上。');wi.reloadEditor(book,true);refreshSummary()}head.tabIndex=-1;head.focus({preventScroll:true});
     }catch(err){close();throw err}
 }

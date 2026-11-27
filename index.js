@@ -64,7 +64,42 @@ dock.id = 'tide-mobile-dock';
 dock.hidden = true;
 dock.append(launcher);
 let toolModule;
+let portraitViewer;
+document.addEventListener('click', event => {
+    if (!root.hasAttribute('data-tide-reading')) return;
+    const avatar = event.target.closest?.('#chat .mes .avatar');
+    const source = avatar?.querySelector('img')?.currentSrc;
+    if (!source) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const url = new URL(source);
+    const file = url.searchParams.get('file');
+    let full = source;
+    if (url.origin === location.origin && file && url.pathname.endsWith('/thumbnail')) {
+        const type = url.searchParams.get('type');
+        if (type === 'avatar') full = `/characters/${encodeURIComponent(file)}`;
+        if (type === 'persona') full = `/User%20Avatars/${encodeURIComponent(file)}`;
+    }
+    const viewer = document.createElement('dialog');
+    viewer.id = 'tide-portrait-viewer';
+    viewer.setAttribute('aria-label', '查看完整头像');
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.ariaLabel = '关闭图片';
+    const image = new Image();
+    image.alt = avatar.closest('.mes').getAttribute('ch_name') || '人物头像';
+    if (full !== source) image.addEventListener('error', () => { image.src = source; }, {once:true});
+    image.src = full;
+    close.append(image);
+    viewer.append(close);
+    viewer.onclick = () => viewer.close();
+    viewer.onclose = () => { viewer.remove(); if (portraitViewer === viewer) portraitViewer = null; };
+    document.body.append(viewer);
+    portraitViewer = viewer;
+    viewer.showModal();
+}, true);
 function reading(active) {
+    if (!active && portraitViewer?.open) portraitViewer.close();
     root.toggleAttribute('data-tide-reading', active && mobile.matches && !original());
 }
 document.body.append(frame, dock);

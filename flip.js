@@ -14,8 +14,8 @@ const FACE = 'star-face';
 const STAGE = 'star-stage';
 const ROOT = 'star-flip-on';
 const FLIPPED = 'is-flipped';
-const STYLE_ID = 'star-flip-style';
-const MAX_COVER_LOADS = 2;
+import { watchCover } from './covers.js';
+export { resetCovers } from './covers.js';
 
 const records = new WeakMap();
 
@@ -65,6 +65,7 @@ export function enhanceBatch(cards) {
         if (full) {
             cover.loading = 'lazy';
             cover.src = thumb || full;
+            if (thumb) watchCover(front, cover, full);
         } else {
             front.classList.add('is-blank');
             cover.remove();

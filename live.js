@@ -11,12 +11,20 @@ function image(avatar){return avatar?`<img src="${safe(ctx().getThumbnailUrl('av
 function lead(){const c=ctx(),active=c.chatId&&noteOf({avatar:c.characters[c.characterId]?.avatar,group:c.groupId,file_id:c.chatId,chat_items:c.chat.length});return active||recents[0]}
 function recentList(){return recents.length?recents.map((r,i)=>`<button class="listing" data-recent="${i}">${image(r.avatar).replace('<img','<img class="thumb"')}<span class="rinfo"><b>${safe(r.name)}</b><small>${safe(r.file||'')}</small></span><span>›</span></button>`).join(''):`<p class="blank">${recentError?'最近会话读取失败':'暂无最近会话'}</p>`}
 function resumeContent(){const r=lead();return `${image(r?.avatar)}<small class="en">${r?`继续上次聊天　 /　 第 ${r.count??0} 章`:'开启一段聊天'}</small><h2>${safe(r?.name||'选择角色')}</h2><span class="next">${I('next')}</span>`}
-function homeDraw(){$('#home').innerHTML=`<div class="hero">${art}<div class="heroCopy"><span class="cap">01　/　THE READING ROOM</span><h1>潮汐来信</h1><p>潮声未歇，故事待续。</p></div><small class="folio en">XINGCHUI　 ·　 VOL. 01</small></div><div class="homebody"><div class="sect"><h2>续读</h2><small>LAST CONVERSATION</small></div><button class="resume" data-resume>${resumeContent()}</button><div class="sect"><h2>人间清欢</h2><small>WORKSPACE</small></div><div class="tiles">${[['book','世界书','条目与世界设定'],['api','API 连接','模型与连接配置'],['pen','预设与提示词','当前预设与生成参数'],['box','酒馆目录','其余设置与工具']].map(([k,n,l])=>`<button class="tile" data-go="${n}">${I(k)}<b>${n}</b><small>${l}</small></button>`).join('')}${ledgerTile()}</div><div class="sect"><h2>最近会话</h2><button data-go="聊天记录" class="hint">全部 ›</button></div><div class="glass recentShort">${recentList()}</div></div>`}
+function homeDraw(){
+    if ($('#home .hero')) {
+        $('#home [data-resume]').innerHTML = resumeContent();
+        $('#home .recentShort').innerHTML = recentList();
+        $('#home .ledgerTile').outerHTML = ledgerTile();
+        return;
+    }
+    $('#home').innerHTML=`<div class="hero">${art}<div class="heroCopy"><span class="cap">01　/　THE READING ROOM</span><h1>潮汐来信</h1><p>潮声未歇，故事待续。</p></div><small class="folio en">XINGCHUI　 ·　 VOL. 01</small></div><div class="homebody"><div class="sect"><h2>续读</h2><small>LAST CONVERSATION</small></div><button class="resume" data-resume>${resumeContent()}</button><div class="sect"><h2>人间清欢</h2><small>WORKSPACE</small></div><div class="tiles">${[['book','世界书','条目与世界设定'],['api','API 连接','模型与连接配置'],['pen','预设与提示词','当前预设与生成参数'],['box','酒馆目录','其余设置与工具']].map(([k,n,l])=>`<button class="tile" data-go="${n}">${I(k)}<b>${n}</b><small>${l}</small></button>`).join('')}${ledgerTile()}</div><div class="sect"><h2>最近会话</h2><button data-go="聊天记录" class="hint">全部 ›</button></div><div class="glass recentShort">${recentList()}</div></div>`}
 let available = [], filtered = [], shown = 0, sentinel, flip, generation = 0;
 const BATCH = 12;
 function releaseCards() {
     generation++;
     sentinel?.disconnect();
+    flip?.resetCovers();
     $('#rm_print_characters_block').replaceChildren();
     available = filtered = [];
     shown = 0;
@@ -41,6 +49,7 @@ function filterCards() {
     const query = $('#searchBox').value.trim().toLocaleLowerCase();
     filtered = available.filter(({ch}) => ch.name?.toLocaleLowerCase().includes(query));
     shown = 0;
+    flip?.resetCovers();
     $('#rm_print_characters_block').replaceChildren();
     $('#result').textContent = `${filtered.length} 位角色`;
     sentinel?.disconnect();
@@ -123,10 +132,41 @@ window.showChatDesk=async()=>{
     closePanel();stopAtlas();const ticket=++deskGeneration;page='desk';appearance();$('#album').hidden=$('#home').hidden=$('#nav').hidden=$('#right').hidden=true;
     let desk=$('#desk');if(!desk){desk=document.createElement('section');desk.id='desk';desk.className='page pad';$('#nav').before(desk)}desk.hidden=false;$('#brand').innerHTML='<b>星垂</b><small>DIALOGUE</small>';$('#left').innerHTML=I('left');$('#left').ariaLabel='返回当前聊天';$('#left').onclick=window.showTideChat;
     const c=ctx(),group=c.groups?.find(g=>c.groupId!=null&&String(g.id)===String(c.groupId)),ch=c.characters?.[c.characterId],members=group?(group.members||[]).map(a=>c.characters.find(v=>v?.avatar===a)).filter(Boolean):ch?[ch]:[];
-    const profile = !group && ch ? `<div class="glass detail">${image(ch.avatar).replace('<img','<img class="personpic"')}<p>${safe(String(ch.data?.description || ch.description || '').slice(0, 480))}</p></div>` : '';
     const title=group?.name||ch?.name||'当前会话';const section=(k,t)=>`<div class="sect"><h2>${t}</h2><small>${k}</small></div>`;
-    desk.innerHTML=`<span class="cap">FIELD NOTES　 /　 当前会话</span><h1 class="title">${safe(title)}</h1>${profile}<p class="hint">在这里翻看设定，返回后继续原来的对话。</p>${section('LINKED BOOKS','关联世界书')}<div class="glass" data-desk-books><p class="blank">正在整理书目…</p></div>${section('WORKSPACE','手边工具')}<div class="glass">${menuItem('api','API 连接')}${menuItem('pen','预设与提示词')}${menuItem('box','Token 用量')}${menuItem('box','酒馆目录')}</div><p class="hint" style="margin-top:14px">连接、预设与用量为全局设置。</p>`;
-    try{const bindings=await Promise.all(members.map(async ch=>{if(!ch.data?.extensions&&!ch.data?.description&&c.unshallowCharacter){const i=c.characters.indexOf(ch);if(i>=0)await c.unshallowCharacter(String(i));ch=ctx().characters.find(x=>x?.avatar===ch.avatar)||ch}return host.linkedBooks(ch)}));if(ticket!==deskGeneration||page!=='desk')return;
+    desk.innerHTML=`<span class="cap">FIELD NOTES　 /　 当前会话</span><h1 class="title">${safe(title)}</h1><div data-profiles></div>${section('LINKED BOOKS','关联世界书')}<div class="glass" data-desk-books><p class="blank">正在整理书目…</p></div>${section('WORKSPACE','手边工具')}<div class="glass">${menuItem('api','API 连接')}${menuItem('pen','预设与提示词')}${menuItem('box','Token 用量')}${menuItem('box','酒馆目录')}</div><p class="hint" style="margin-top:14px">连接、预设与用量为全局设置。</p>`;
+    desk.scrollTop = 0;
+    const inflight = new Map();
+    async function resolveCharacter(member) {
+        const list = ctx().characters;
+        const index = list.findIndex(item => item?.avatar === member.avatar);
+        const current = list[index];
+        if (!current) throw Error('找不到角色');
+        if (!current.shallow && (current.data || current.first_mes || current.description)) return current;
+        if (!inflight.has(member.avatar)) {
+            const load = (async () => {
+                await ctx().unshallowCharacter(String(index));
+                const full = ctx().characters.find(item => item?.avatar === member.avatar);
+                if (!full || full.shallow) throw Error('暂时无法读取角色');
+                return full;
+            })();
+            inflight.set(member.avatar, load);
+        }
+        try { return await inflight.get(member.avatar); }
+        finally { inflight.delete(member.avatar); }
+    }
+    const profiles = desk.querySelector('[data-profiles]');
+    try {
+        const { mountProfile } = await import('./profile.js');
+        if (ticket !== deskGeneration || page !== 'desk') return;
+        for (const member of members) mountProfile(profiles, member, resolveCharacter);
+    } catch { profiles.textContent = '暂时无法打开角色设定。'; }
+    try {
+        const bindings = [];
+        for (const member of members) {
+            if (ticket !== deskGeneration || page !== 'desk') return;
+            bindings.push(await host.linkedBooks(await resolveCharacter(member)));
+        }
+        if (ticket !== deskGeneration || page !== 'desk') return;
         const names=[...new Set([c.chatMetadata?.world_info,...bindings.flat()].filter(Boolean))];const box=desk.querySelector('[data-desk-books]');box.innerHTML=names.length?names.map((name,i)=>`<button class="tool" data-bound="${i}">${I('book')}<span>${safe(name)}</span><i class="tail">›</i></button>`).join(''):'<p class="blank">这个会话和角色没有关联世界书。</p>';box.onclick=e=>{const t=e.target.closest('[data-bound]');if(t)openAtlas({book:names[+t.dataset.bound],scope:title})};
     }catch{if(ticket===deskGeneration)desk.querySelector('[data-desk-books]').textContent='暂时无法读取关联书目。'}
 };

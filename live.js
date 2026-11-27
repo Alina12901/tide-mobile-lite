@@ -123,6 +123,7 @@ function themePanel() {
     pop('sheet','主题与背景','APPEARANCE', '<h3>首页题图</h3>' +
         menuItem('moon', (global ? '' : '✓ ') + '潮汐月景','hero-default') +
         menuItem('palette', (global ? '✓ ' : '') + '跟随全局背景','hero-global') +
+        (global && !host.globalBackground?.() ? '<p class="hint">当前全局背景为空。点「选择酒馆背景」选一张图。</p>' : '') +
         menuItem('palette','选择酒馆背景','酒馆背景') + menuItem('history','检查潮汐更新','检查更新') +
         '<p class="hint" role="status" data-update-status></p>' + menuItem('left','恢复原版酒馆','original') + `<p class="hint">${safe(host.reopenHint || '')}</p>`);
     $('[data-update-status]').textContent = versionState;

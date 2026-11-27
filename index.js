@@ -186,7 +186,20 @@ window.starTideMobile={ctx,appearance,toggleNight,reading,reopenHint,
         if (typeof value === 'boolean') pref().setItem('tide-global-hero', value ? '1' : '0');
         return pref().getItem('tide-global-hero') === '1';
     },
-    globalBackground(){return background_settings.name !== '__transparent.png' ? background_settings.url : '';},
+    globalBackground() {
+        if (background_settings.name === '__transparent.png') return '';
+        // SillyTavern saves url("backgrounds/…") relative to its own page.
+        // Resolve it there before passing the CSS value to the nested shell.
+        const value = background_settings.url?.trim() || '';
+        const match = /^url\(\s*(["']?)(.*?)\1\s*\)$/i.exec(value);
+        if (!match?.[2]) return '';
+        try {
+            const absolute = new URL(match[2], document.baseURI);
+            return `url(${JSON.stringify(absolute.href)})`;
+        } catch {
+            return '';
+        }
+    },
     async updateState(manual = false) {
         const { checkTideUpdate } = await import('./updates.js');
         return checkTideUpdate(ctx(), manual);

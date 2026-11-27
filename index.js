@@ -1,3 +1,4 @@
+import { background_settings } from '/scripts/backgrounds.js';
 /*! 星垂 · 潮汐来信 | Alina12901/tide-mobile-lite | 版本记录见 provenance.json */
 const ctx = () => SillyTavern.getContext();
 const mobile = matchMedia('(max-width:800px), (pointer:coarse) and (max-height:800px) and (orientation:landscape)');
@@ -155,7 +156,7 @@ function mountLaunchControls() {
         if (control) control.hidden = !mobile.matches;
     }
 }
-const drawerIds={'世界书':'WI-SP-button','API 连接':'sys-settings-button','预设与提示词':'ai-config-button','高级格式':'advanced-formatting-button','用户人设':'persona-management-button','群聊':'rightNavHolder','原版角色管理':'rightNavHolder','扩展与正则':'extensions-settings-button','酒馆背景':'backgrounds-button','偏好与快捷指令':'user-settings-button','用户设置':'user-settings-button'};
+const drawerIds={'世界书':'WI-SP-button','API 连接':'sys-settings-button','预设与提示词':'ai-config-button','高级格式':'advanced-formatting-button','用户人设':'persona-management-button','群聊':'rightNavHolder','原版角色管理':'rightNavHolder','扩展与正则':'extensions-settings-button','酒馆背景':'backgrounds-button','用户设置':'user-settings-button'};
 let opening=false;
 window.starTideMobile={ctx,appearance,toggleNight,reading,reopenHint,
     atlasStore:()=>import('./atlas-store.js'),
@@ -181,6 +182,15 @@ window.starTideMobile={ctx,appearance,toggleNight,reading,reopenHint,
             frame.contentWindow.showTideChat();
         }
     }finally{opening=false}},
+    heroGlobal(value) {
+        if (typeof value === 'boolean') pref().setItem('tide-global-hero', value ? '1' : '0');
+        return pref().getItem('tide-global-hero') === '1';
+    },
+    globalBackground(){return background_settings.name !== '__transparent.png' ? background_settings.url : '';},
+    async updateState(manual = false) {
+        const { checkTideUpdate } = await import('./updates.js');
+        return checkTideUpdate(ctx(), manual);
+    },
     background(){return document.querySelector('#bg1')?.style.backgroundImage||''},
     async books(ch){const {world_info}=await import('/scripts/world-info.js');return [...new Set([ch.data?.extensions?.world,...(world_info.charLore?.find(x=>x.name===ch.avatar.replace(/\.[^.]+$/,''))?.extraBooks||[]),ch.data?.character_book?.name].filter(Boolean))].join('、')},
 };

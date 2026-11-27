@@ -1,11 +1,14 @@
 const host=parent.starTideMobile;
 const ctx=host.ctx;
 let page='home',layer='',lastFocus,recents=[],recentError=false,requestId=0;
-const tools={'设定与连接':[['世界书','book'],['API 连接','api'],['预设与提示词','pen'],['高级格式','settings']], '角色与会话':[['角色相册','album'],['原版角色管理','person'],['用户人设','person'],['群聊','chat'],['聊天记录','history']], '工作台':[['Token 用量','box'],['扩展与正则','box'],['主题与背景','palette'],['偏好与快捷指令','settings'],['用户设置','box']]};
+const tools={'设定与连接':[['世界书','book'],['API 连接','api'],['预设与提示词','pen'],['高级格式','settings']], '角色与会话':[['角色相册','album'],['原版角色管理','person'],['用户人设','person'],['群聊','chat'],['聊天记录','history']], '工作台':[['Token 用量','box'],['扩展与正则','box'],['主题与背景','palette'],['用户设置','box']]};
 function menuItem(k,name,to=name){return `<button class="tool" data-go="${safe(to)}">${I(k)}<span>${safe(name)}</span><i class="tail">›</i></button>`}
-function closePanel(){if(!layer)return;$('#shade').hidden=true;layer='';[...$('#app').children].forEach(node=>node.inert=false);if(lastFocus?.isConnected)lastFocus.focus({preventScroll:true})}
+function closePanel(){if(!layer)return;dismissDeleteNotice();$('#shade').hidden=true;layer='';[...$('#app').children].forEach(node=>node.inert=false);if(lastFocus?.isConnected)lastFocus.focus({preventScroll:true})}
 function fail(err){pop('sheet','暂时无法打开','潮汐来信',`<p class="hint">${safe(err.message||'请稍后重试')}</p>`)}
-function appearance(){const night=host.appearance();document.documentElement.dataset.mode=night?'night':'day';const btn=$('#lightSwitch');btn.innerHTML=I(night?'sun':'moon');btn.ariaLabel=night?'切换日间模式':'切换夜间模式';btn.setAttribute('aria-pressed',String(night));const bg=host.background();$('#app').style.setProperty('--wall',bg||'none');if(!bg)$('#app').style.removeProperty('--wall');$('#app').classList.toggle('wall',Boolean(bg))}
+function appearance(){const night=host.appearance();document.documentElement.dataset.mode=night?'night':'day';const btn=$('#lightSwitch');btn.innerHTML=I(night?'sun':'moon');btn.ariaLabel=night?'切换日间模式':'切换夜间模式';btn.setAttribute('aria-pressed',String(night));const bg=host.background();$('#app').style.setProperty('--wall',bg||'none');if(!bg)$('#app').style.removeProperty('--wall');$('#app').classList.toggle('wall',Boolean(bg));
+    const hero = host.heroGlobal?.() && host.globalBackground?.();
+    $('#app').style.setProperty('--hero-wall', hero || 'none');
+    $('#app').classList.toggle('globalHero', Boolean(hero));}
 function noteOf(a){const c=ctx();const group=a.group?c.groups.find(g=>String(g.id)===String(a.group)):null;const ch=c.characters.find(x=>x?.avatar===(group?.members?.[0]??a.avatar));if(!(ch||group))return null;return {avatar:ch?.avatar||'',group:group?.id,file:a.file_id||a.file_name?.replace(/\.jsonl$/,''),name:group?.name||ch.name,count:a.chat_items}}
 function image(avatar){return avatar?`<img src="${safe(ctx().getThumbnailUrl('avatar',avatar))}" alt="" loading="lazy">`:''}
 function lead(){const c=ctx(),active=c.chatId&&noteOf({avatar:c.characters[c.characterId]?.avatar,group:c.groupId,file_id:c.chatId,chat_items:c.chat.length});return active||recents[0]}
@@ -114,7 +117,29 @@ window.showTideChat = () => {
 };
 function go(k){setReading(false);resetDesk();stopAtlas();closePanel();if(page==='album'&&k!=='album')releaseCards();page=k;$('#album').hidden=k!=='album';$('#home').hidden=k!=='home';$('#brand').innerHTML='<b>星垂</b><small>TAVERN</small>';$('#nav').innerHTML=[['home','首页'],['album','角色'],['chat','聊天']].map(([x,n])=>`<button data-tab="${x}" class="${k===x?'on':''}">${I(x)}${n}</button>`).join('');if(k==='album')gallery();else homeDraw()}
 function drawer(){pop('drawer','酒馆目录','INDEX　 /　 XINGCHUI',Object.entries(tools).map(([g,items])=>`<p class="cap group">${g}</p>${items.map(([n,k])=>menuItem(k,n)).join('')}`).join(''))}
-function route(n){if(n==='酒馆目录')return drawer();if(n==='世界书')return openAtlas();if(n==='角色相册')return go('album');if(n==='聊天记录')return pop('sheet',n,'CHAT HISTORY',`<div class="glass">${recentList()}</div>`);if(n==='Token 用量'||n==='token')return showLedger();if(n==='主题与背景')return pop('sheet',n,'APPEARANCE',menuItem('palette','选择酒馆背景','酒馆背景')+menuItem('left','恢复原版酒馆','original')+`<p class="hint">${safe(host.reopenHint || '')}</p>`);if(n==='original'){closePanel();host.restore();return}return host.drawer(n,{scope:page==='desk'?'当前会话　/　手边工具':'人间清欢　/　WORKSPACE'})}
+let versionState = '';
+function themePanel() {
+    const global = host.heroGlobal?.();
+    pop('sheet','主题与背景','APPEARANCE', '<h3>首页题图</h3>' +
+        menuItem('moon', (global ? '' : '✓ ') + '潮汐月景','hero-default') +
+        menuItem('palette', (global ? '✓ ' : '') + '跟随全局背景','hero-global') +
+        menuItem('palette','选择酒馆背景','酒馆背景') + menuItem('history','检查潮汐更新','检查更新') +
+        '<p class="hint" role="status" data-update-status></p>' + menuItem('left','恢复原版酒馆','original') + `<p class="hint">${safe(host.reopenHint || '')}</p>`);
+    $('[data-update-status]').textContent = versionState;
+}
+async function refreshUpdate(manual) {
+    if (!host.updateState) return;
+    const status = () => $('[data-update-status]');
+    if (manual && status()) status().textContent = '正在检查…';
+    try {
+        const state = await host.updateState(manual);
+        versionState = state.message;
+        $('#right').toggleAttribute('data-update', state.available);
+    } catch { versionState = '暂时无法连接更新服务，可以稍后再试。'; }
+    if (status()) status().textContent = versionState;
+}
+window.addEventListener('load', () => setTimeout(() => refreshUpdate(false), 1600), {once:true});
+function route(n){if(n==='酒馆目录')return drawer();if(n==='世界书')return openAtlas();if(n==='角色相册')return go('album');if(n==='聊天记录')return pop('sheet',n,'CHAT HISTORY',`<div class="glass">${recentList()}</div>`);if(n==='Token 用量'||n==='token')return showLedger();if(n==='主题与背景')return themePanel();if(n==='检查更新')return refreshUpdate(true);if(n==='hero-default'||n==='hero-global'){host.heroGlobal(n==='hero-global');appearance();return themePanel()}if(n==='original'){closePanel();host.restore();return}return host.drawer(n,{scope:page==='desk'?'当前会话　/　手边工具':'人间清欢　/　WORKSPACE'})}
 window.showTideHome=async()=>{appearance();go('home');const seq=++requestId;try{const res=await fetch('/api/chats/recent',{method:'POST',headers:ctx().getRequestHeaders(),body:JSON.stringify({max:16,pinned:[]})});if(!res.ok)throw Error();const data=await res.json();if(seq!==requestId)return;recents=data.map(noteOf).filter(Boolean);recentError=false}catch{if(seq!==requestId)return;recentError=true}if(page==='home'){
     $('#home [data-resume]').innerHTML=resumeContent();
     $('#home .recentShort').innerHTML=recentList();

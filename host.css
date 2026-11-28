@@ -206,3 +206,56 @@ html[data-tide-reading] #chat .tide-saved-notes > div {
     white-space: pre-wrap; overflow-wrap: anywhere;
 }
 html[data-tide-reading] #chat .mes_reasoning_details:has(.mes_reasoning:not(:empty)) ~ .tide-saved-notes { display: none; }
+
+/* Use the Tavern's own per-message editor and its save/cancel handlers. */
+/* Keep the header inside the clipped message block and align it with the avatar. */
+html[data-tide-reading] #chat .mes[is_system="false"] > .mesAvatarWrapper { margin-bottom: -24px; }
+html[data-tide-reading] #chat .mes[is_system="false"] > .mes_block > .ch_name {
+    margin-top: 0;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+html[data-tide-reading] #chat .ch_name > .flex1 { min-width: 0; overflow-wrap: anywhere; }
+html[data-tide-reading] #chat .ch_name > :is(.mes_buttons, .mes_edit_buttons) {
+    align-items: center;
+    flex-wrap: wrap;
+    margin-inline-start: auto;
+    max-width: 100%;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+/* Preserve the host's edit, swipe and generation states. */
+html[data-tide-reading] body:not([data-generating="true"], [data-swiping="true"]) #chat .mes[is_system="false"]:not(:has(.edit_textarea)) .ch_name > .mes_buttons:not([style*="display: none"]) {
+    display: flex !important;
+}
+html[data-tide-reading] #chat .mes:has(.edit_textarea) .ch_name > .mes_edit_buttons {
+    display: inline-flex !important;
+}
+html[data-tide-reading] #chat .ch_name :is(.mes_buttons > .mes_edit, .mes_edit_buttons > .mes_edit_done, .mes_edit_buttons > .mes_edit_cancel) {
+    display: inline-grid !important;
+    place-items: center;
+    box-sizing: border-box;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px solid #e3cedf52;
+    border-radius: 14px;
+    background: #403647;
+    color: #fff0f6 !important;
+    font-size: 16px;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto;
+    touch-action: manipulation;
+}
+html[data-tide-reading] #chat .ch_name .mes_edit_done { background: #395568; }
+html[data-tide-reading] #chat .edit_textarea {
+    box-sizing: border-box;
+    width: 100%;
+    font-size: max(16px, 1em);
+    color: #fff6f8;
+    background: #302934;
+}

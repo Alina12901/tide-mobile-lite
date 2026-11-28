@@ -251,6 +251,11 @@ html[data-tide-reading] #chat .ch_name :is(.mes_buttons > .mes_edit, .mes_edit_b
     pointer-events: auto;
     touch-action: manipulation;
 }
+html[data-tide-reading] #chat .ch_name .mes_buttons > .mes_edit {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
 html[data-tide-reading] #chat .ch_name .mes_edit_done { background: #395568; }
 html[data-tide-reading] #chat .edit_textarea {
     box-sizing: border-box;

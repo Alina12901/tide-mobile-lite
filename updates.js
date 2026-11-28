@@ -1,7 +1,7 @@
 import { extensionTypes } from '/scripts/extensions.js';
 
 const id = decodeURIComponent(new URL('.', import.meta.url).pathname.split('/').filter(Boolean).pop());
-const cacheKey = 'tide-update-1.3.18-' + id;
+const cacheKey = 'tide-update-1.3.19-' + id;
 let pending;
 export function checkTideUpdate(context, manual) {
     if (pending) return pending;
